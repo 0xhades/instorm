@@ -1,6 +1,9 @@
 # instorm
 instagram checker written in go language.
 
+![alt text](img/1.png)
+![alt text](img/2.png)
+
 # installation
 ```
 git clone github.com/justghostz/instorm.git ~/go/src/instorm
@@ -18,10 +21,6 @@ go run instorm
 ```
 cd ~/go/src/instorm && go build -o build/instorm instorm
 ```
-
-![alt text](img/1.png)
-![alt text](img/2.png)
-
 # about
 instagram: @ctpe
 
