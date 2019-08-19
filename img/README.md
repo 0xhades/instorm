@@ -1,3 +1,4 @@
 # instorm
 
-Photos of the program
+![alt text](img/1.png)
+![alt text](img/2.png)
