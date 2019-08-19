@@ -1,1 +1,29 @@
 # instorm
+instagram checker written in go language.
+
+# installation
+```
+git clone github.com/justghostz/instorm.git ~/go/src/instorm
+```
+# libraries
+```
+go get github.com/fatih/color
+go get github.com/google/uuid
+```
+# run
+```
+go run instorm
+```
+# build
+```
+cd ~/go/src/instorm && go build -o build/instorm instorm
+```
+
+![alt text](img/1.png)
+![alt text](img/2.png)
+
+# about
+instagram: @ctpe
+
+a little note: i wrote the program at hurry, so don't judge me :(
+
