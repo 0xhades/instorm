@@ -100,7 +100,7 @@ func Start() {
 	_, _ = R.Println("/_//_/ /_/____/\\__/\\____/_/  /_/ /_/ /_/ ")
 
 	_, _ = R.Println("")
-	color.Blue("By BlackHole, inst: @ctpe")
+	color.Blue("By BlackHole, inst: @fenllz")
 	fmt.Println()
 
 	_, _ = G.Print("Do you wanna set sleep time (Recommended) [y/n]: ")
@@ -297,7 +297,7 @@ func Start() {
 	_, _ = R.Println("/_//_/ /_/____/\\__/\\____/_/  /_/ /_/ /_/ ")
 
 	_, _ = R.Println("")
-	color.Blue("By BlackHole, inst: @ctpe")
+	color.Blue("By BlackHole, inst: @fenllz")
 	fmt.Println()
 
 	go func() {
@@ -315,10 +315,10 @@ func Start() {
 	_, _ = R.Println("/_//_/ /_/____/\\__/\\____/_/  /_/ /_/ /_/ ")
 
 	_, _ = R.Println("")
-	color.Blue("By BlackHole, inst: @ctpe")
+	color.Blue("By BlackHole, inst: @fenllz")
 	fmt.Println()
 
-	_, _ = G.Println("For any bug, just contact with me at instagram @ctpe,")
+	_, _ = G.Println("For any bug, just contact with me at instagram @fenllz,")
 	_, _ = G.Println("Thank you for using instorm, and I hope you have a nice day :)")
 
 }
