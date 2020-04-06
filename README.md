@@ -23,6 +23,3 @@ cd ~/go/src/instorm && go build -o build/instorm instorm
 ```
 # about
 instagram: @ctpe
-
-a little note: i wrote the program at hurry, so don't judge me :(
-
