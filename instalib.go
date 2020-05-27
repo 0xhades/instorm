@@ -16,6 +16,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"regexp"
@@ -34,20 +35,23 @@ type API struct {
 }
 
 type HttpResponse struct {
-	Err       error
-	ResStatus int
-	Req       *http.Request
-	Res       *http.Response
-	Body      string
-	Headers   http.Header
-	Cookies   *cookiejar.Jar
+	Err                 string
+	ResStatus           int
+	Req                 *http.Request
+	Res                 *http.Response
+	Body                string
+	Headers             http.Header
+	Cookies             *cookiejar.Jar
+	RequestSizeByBytes  float64
+	ResponseSizeByBytes float64
 }
 
-func MakeHttpResponse(Response *http.Response, Request *http.Request, jar *cookiejar.Jar, Error error) HttpResponse {
+func MakeHttpResponse(Response *http.Response, Request *http.Request, jar *cookiejar.Jar, Error error, RequestSizeByBytes float64, ResponseSizeByBytes float64) HttpResponse {
 
 	var res = ""
 	var StatusCode = 0
 	var Headers http.Header = nil
+	var err string = "null"
 
 	if Response != nil {
 		var reader io.ReadCloser
@@ -70,7 +74,11 @@ func MakeHttpResponse(Response *http.Response, Request *http.Request, jar *cooki
 		}
 	}
 
-	return HttpResponse{ResStatus: StatusCode, Res: Response, Req: Request, Body: res, Headers: Headers, Cookies: jar, Err: Error}
+	if Error != nil {
+		err = Error.Error()
+	}
+
+	return HttpResponse{ResStatus: StatusCode, Res: Response, ResponseSizeByBytes: ResponseSizeByBytes, Req: Request, RequestSizeByBytes: RequestSizeByBytes, Body: res, Headers: Headers, Cookies: jar, Err: err}
 }
 
 func createKeyValuePairs(m http.Header) string {
@@ -87,21 +95,37 @@ func HMACSHA256(message string, key string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func GetAPI() API {
+func GetAPI() API { //, float64, float64) {
+	// req, _ := http.NewRequest("GET", "https://raw.githubusercontent.com/mgp25/Instagram-API/master/src/Constants.php", nil)
+	// client := &http.Client{}
 
-	IG_VERSION := "10.26.0"
-	IG_SIG_KEY := "4f8732eb9ba7d1c8e8897a75d6474d4eb3f5279137431b2aafb71fafe2abe178"
-	SIG_KEY_VERSION := "4"
-	X_IG_Capabilities := "3brTvw=="
+	// ReqBytes, _ := httputil.DumpRequestOut(req, true)
+	// RequestSizeByBytes := float64(len(ReqBytes))
+
+	// resp, err := client.Do(req)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer resp.Body.Close()
+	// body, err := ioutil.ReadAll(resp.Body)
+
+	// ResBytes, _ := httputil.DumpResponse(resp, true)
+	// ResponseSizeByBytes := float64(len(ResBytes))
+
+	// content := string(body)
+	IG_VERSION := "107.0.0.27.121"                                                   //regexp.MustCompile("const IG_VERSION = '(.*?)';").FindStringSubmatch(content)[1]
+	IG_SIG_KEY := "c36436a942ea1dbb40d7f2d7d45280a620d991ce8c62fb4ce600f0a048c32c11" //regexp.MustCompile("const IG_SIG_KEY = '(.*?)';").FindStringSubmatch(content)[1]
+	SIG_KEY_VERSION := "4"                                                           //regexp.MustCompile("const SIG_KEY_VERSION = '(.*?)';").FindStringSubmatch(content)[1]
+	X_IG_Capabilities := "3brTvw=="                                                  //regexp.MustCompile("const X_IG_Capabilities = '(.*?)';").FindStringSubmatch(content)[1]
 
 	_API := API{VERSION: IG_VERSION, KEY: IG_SIG_KEY, KeyVersion: SIG_KEY_VERSION, CAPABILITIES: X_IG_Capabilities}
 
-	return _API
+	return _API //, RequestSizeByBytes, ResponseSizeByBytes
 }
 
 func IR(iurl string, signedbody map[string]string, payload string,
 	Headers map[string]string, api API, proxy string,
-	ptype string, cookie *cookiejar.Jar, usecookies bool) HttpResponse {
+	cookie *cookiejar.Jar, usecookies bool, timeout_milliseconds int) HttpResponse {
 
 	_url := iurl
 
@@ -113,6 +137,7 @@ func IR(iurl string, signedbody map[string]string, payload string,
 
 	_api := API{}
 	if api == (API{}) {
+		//_api, _, _ = GetAPI()
 		_api = GetAPI()
 	} else {
 		_api = api
@@ -164,21 +189,39 @@ func IR(iurl string, signedbody map[string]string, payload string,
 	jar := cookie
 	transport := http.Transport{}
 	if proxy != "" {
-		proxyUrl, _ := url.Parse(ptype + "://" + proxy)
-		transport.Proxy = http.ProxyURL(proxyUrl) // set proxy proxyType://proxyIp:proxyPort
+		proxyUrl := &url.URL{Host: proxy}
+		transport.Proxy = http.ProxyURL(proxyUrl)
 	}
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //set ssl
+	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	client := &http.Client{}
 	if usecookies {
 		client = &http.Client{Jar: jar}
 	}
+	if timeout_milliseconds != 0 {
+		client.Timeout = time.Millisecond * time.Duration(timeout_milliseconds)
+	}
 	client.Transport = &transport
 	resp, err := client.Do(req)
+
+	RawReq, _ := httputil.DumpRequest(req, true)
+	ReqSize := float64(len(RawReq))
+	if _payload != "" {
+		ReqSize += float64(len([]byte(_payload)))
+		ReqSize += 4
+	}
+	ResSize := float64(0)
+	if resp != nil {
+		RawRes, _ := httputil.DumpResponse(resp, true)
+		ResSize = float64(len(RawRes))
+	} else {
+		ResSize = 0
+	}
+
 	if err != nil {
-		return MakeHttpResponse(resp, req, jar, err)
+		return MakeHttpResponse(resp, req, jar, err, ReqSize, ResSize)
 	}
 	defer resp.Body.Close()
-	return MakeHttpResponse(resp, req, jar, err)
+	return MakeHttpResponse(resp, req, jar, nil, ReqSize, ResSize)
 }
 
 func MakeList(chars []string, l int) []string {
@@ -294,10 +337,12 @@ func GetProxies() ([]string, []string, []string) {
 			_port := fmt.Sprintf("%v", _proxy["port"])
 
 			if _type == "https" {
-				HTTPSProxies = append(HTTPSProxies, _type+"://"+_ip+":"+_port)
+				//HTTPSProxies = append(HTTPSProxies, _type+"://"+_ip+":"+_port)
+				HTTPSProxies = append(HTTPSProxies, _ip+":"+_port)
 			}
 			if _type == "http" {
-				HTTPProxies = append(HTTPProxies, _type+"://"+_ip+":"+_port)
+				//HTTPProxies = append(HTTPProxies, _type+"://"+_ip+":"+_port)
+				HTTPProxies = append(HTTPProxies, _ip+":"+_port)
 			}
 
 			continue
@@ -313,10 +358,12 @@ func GetProxies() ([]string, []string, []string) {
 			_port := fmt.Sprintf("%v", _proxy["port"])
 
 			if _type == "https" {
-				HTTPSProxies = append(HTTPSProxies, _type+"://"+_ip+":"+_port)
+				//HTTPSProxies = append(HTTPSProxies, _type+"://"+_ip+":"+_port)
+				HTTPSProxies = append(HTTPSProxies, _ip+":"+_port)
 			}
 			if _type == "http" {
-				HTTPProxies = append(HTTPProxies, _type+"://"+_ip+":"+_port)
+				//HTTPProxies = append(HTTPProxies, _type+"://"+_ip+":"+_port)
+				HTTPProxies = append(HTTPProxies, _ip+":"+_port)
 			}
 
 			break
@@ -331,10 +378,12 @@ func GetProxies() ([]string, []string, []string) {
 		_port := fmt.Sprintf("%v", _proxy["port"])
 
 		if _type == "https" {
-			HTTPSProxies = append(HTTPSProxies, _type+"://"+_ip+":"+_port)
+			//HTTPSProxies = append(HTTPSProxies, _type+"://"+_ip+":"+_port)
+			HTTPSProxies = append(HTTPSProxies, _ip+":"+_port)
 		}
 		if _type == "http" {
-			HTTPProxies = append(HTTPProxies, _type+"://"+_ip+":"+_port)
+			//HTTPProxies = append(HTTPProxies, _type+"://"+_ip+":"+_port)
+			HTTPProxies = append(HTTPProxies, _ip+":"+_port)
 		}
 
 	}
@@ -350,7 +399,7 @@ func ssliceContains(s []string, e string) bool {
 	return false
 }
 
-func login(us string, ps string, proxy string, proxy_type string, FakeCookies bool, InstaAPI API) HttpResponse {
+func login(us string, ps string, proxy string, FakeCookies bool, InstaAPI API, timeout_milliseconds int) HttpResponse {
 	url := "https://i.instagram.com/api/v1/accounts/login/"
 
 	jar, _ := cookiejar.New(nil)
@@ -369,9 +418,9 @@ func login(us string, ps string, proxy string, proxy_type string, FakeCookies bo
 
 	if FakeCookies {
 		jar = APICreateCookies(-1, false, "", "")
-		return IR(url, post, "", nil, InstaAPI, proxy, proxy_type, jar, true)
+		return IR(url, post, "", nil, InstaAPI, proxy, jar, true, timeout_milliseconds)
 	}
-	return IR(url, post, "", nil, InstaAPI, proxy, proxy_type, jar, true)
+	return IR(url, post, "", nil, InstaAPI, proxy, jar, true, timeout_milliseconds)
 }
 
 func readLines(path string) ([]string, error) {
@@ -799,7 +848,7 @@ func GetLegitCookies() http.CookieJar {
 }
 
 func GetProfile(jar cookiejar.Jar, api API) (map[string]string, HttpResponse) {
-	res := IR("accounts/current_user/?edit=true", nil, "", nil, api, "", "", &jar, true)
+	res := IR("accounts/current_user/?edit=true", nil, "", nil, api, "", &jar, true, 60000)
 	var profile = make(map[string]string)
 
 	var username = ""
