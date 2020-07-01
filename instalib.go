@@ -189,8 +189,8 @@ func IR(iurl string, signedbody map[string]string, payload string,
 	jar := cookie
 	transport := http.Transport{}
 	if proxy != "" {
-		proxyUrl := &url.URL{Host: proxy}
-		transport.Proxy = http.ProxyURL(proxyUrl)
+		proxyURL := &url.URL{Host: proxy}
+		transport.Proxy = http.ProxyURL(proxyURL)
 	}
 	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	client := &http.Client{}
@@ -451,6 +451,82 @@ func writeLines(lines []string, path string) error {
 		_, _ = fmt.Fprintln(w, line)
 	}
 	return w.Flush()
+}
+
+func appendToFile(filename string, data string) error {
+	f, err := os.OpenFile(filename,
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := f.WriteString(data); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deleteFile(filename string) error {
+	err := os.Remove(filename)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getFileLinesCount(filename string) int {
+	var list []string
+
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		list = append(list, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return len(list)
+}
+
+func fileContains(filename string, str string) bool {
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if scanner.Text() == str {
+			return true
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return false
+}
+
+// WriteToFile -
+func WriteToFile(filename string, data string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = io.WriteString(file, data)
+	if err != nil {
+		return err
+	}
+	return file.Sync()
 }
 
 func RandRange(min int, max int) int {
