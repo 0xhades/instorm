@@ -63,6 +63,15 @@ var counter int
 
 var homeDict string = ""
 
+func ATOS(asciiNum []int) string {
+	res := ""
+	for i := 0; i < len(asciiNum); i++ {
+		character := string(asciiNum[i])
+		res += (character)
+	}
+	return res
+}
+
 func main() {
 
 	// _, _, Proxies := GetProxies()
@@ -155,7 +164,7 @@ func main() {
 
 	// }
 
-	// Do it without threads!
+	// Do it without threads better!
 	user, _ := user.Current()
 	homeDict = user.HomeDir
 
@@ -269,7 +278,7 @@ func Start() {
 	_, _ = R.Println("/_//_/ /_/____/\\__/\\____/_/  /_/ /_/ /_/ ")
 
 	_, _ = R.Println("")
-	color.Blue("By BlackHole, inst: @ctpe")
+	color.Blue("By BlackHole, inst: @0xhades")
 	fmt.Println()
 
 	_, _ = G.Print("Do you wanna set sleep time (Recommended) [y/n]: ")
@@ -280,7 +289,7 @@ func Start() {
 		print("\033[K")
 		for {
 			var TPM string
-			_, _ = G.Print("Enter the seconds you wnna sleep: ")
+			_, _ = G.Print("Enter the milliseconds you wanna sleep: ")
 			_, _ = fmt.Scanln(&TPM)
 
 			if _, err := strconv.Atoi(TPM); err == nil && TPM != "0" && !strings.Contains(TPM, "-") {
@@ -466,7 +475,7 @@ func Start() {
 	_, _ = R.Println("/_//_/ /_/____/\\__/\\____/_/  /_/ /_/ /_/ ")
 
 	_, _ = R.Println("")
-	color.Blue("By BlackHole, inst: @ctpe")
+	color.Blue("By BlackHole, inst: @0xhades")
 	fmt.Println()
 
 	go func() {
@@ -484,10 +493,10 @@ func Start() {
 	_, _ = R.Println("/_//_/ /_/____/\\__/\\____/_/  /_/ /_/ /_/ ")
 
 	_, _ = R.Println("")
-	color.Blue("By BlackHole, inst: @ctpe")
+	color.Blue("By BlackHole, inst: @0xhades")
 	fmt.Println()
 
-	_, _ = G.Println("For any bug, just contact me at instagram @ctpe,")
+	_, _ = G.Println("For any bug, just contact me at instagram @0xhades,")
 	_, _ = G.Println("Thank you for using instorm, and I hope you have a nice day :)")
 
 }
@@ -567,7 +576,7 @@ func Check(us string) {
 			if strings.Contains(res_str, "<html>") || strings.Contains(res_str, "<head>") || strings.Contains(res_str, "<title>") ||
 				strings.Contains(res_str, "<!DOCTYPE") {
 				for {
-					rnd := RandRange(0, 99999999999)
+					rnd := RandRange(0, 9999999)
 					fileName := homeDict + "/" + "instorm_LongResponse" + fmt.Sprintf("%v", rnd)
 					Existence := CheckFileExistence(fileName)
 					if Existence {
@@ -780,7 +789,7 @@ func Check(us string) {
 			}
 			if SleepTime != 0 {
 				rands := RandRange(0, 3)
-				time.Sleep(time.Second * time.Duration(SleepTime+rands))
+				time.Sleep(time.Millisecond * time.Duration(SleepTime+rands))
 			}
 			break
 
