@@ -22,4 +22,4 @@ go run instorm
 cd ~/go/src/instorm && go build -o build/instorm instorm
 ```
 # about
-instagram: @ctpe
+instagram: @0xhades
