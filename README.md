@@ -6,7 +6,7 @@ instagram cracker written in go language.
 
 # installation
 ```
-git clone github.com/justghostz/instorm.git ~/go/src/instorm
+git clone https://github.com/justghostz/instorm.git ~/go/src/instorm
 ```
 # libraries
 ```
